@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BootCraft Studio — Визуальный конструктор USB и ОС</title>
+  
+  <!-- Базовые и подключаемые шрифты -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link id="dynamic-fonts-link" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=Press+Start+2P&family=Share+Tech+Mono&family=VT323&family=Russo+One&family=Syne:wght@600;800&family=Fira+Code:wght@400;600&display=swap">
+  
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+  <div id="app-container">
+    <!-- Верхняя панель управления -->
+    <header id="top-bar">
+      <div class="brand">
+        <div class="brand-icon">⚡</div>
+        <div class="brand-info">
+          <span class="brand-title">BootCraft Studio</span>
+          <span class="brand-badge">v1.0.0</span>
+        </div>
+      </div>
+
+      <!-- Быстрый выбор готовых пресетов -->
+      <div class="presets-nav">
+        <span class="nav-label">Пресеты:</span>
+        <button class="preset-btn" data-preset="win11-clean">💿 Windows 11 Clean</button>
+        <button class="preset-btn" data-preset="retro-fat32">📻 Ретро-Аудио (FAT32)</button>
+        <button class="preset-btn" data-preset="live-media">🎬 Live Медиаплеер</button>
+        <button class="preset-btn" data-preset="hybrid-usb">🔀 Гибридная флешка</button>
+      </div>
+
+      <!-- Правая панель инструментов: шрифты, кастомные блоки, экспорт -->
+      <div class="top-actions">
+        <!-- Селектор шрифта -->
+        <div class="tool-dropdown-wrap">
+          <label for="font-selector" class="dropdown-label">Шрифт:</label>
+          <select id="font-selector" class="select-styled" title="Выбор шрифта оформления">
+            <!-- Заполняется динамически из js/fonts.js -->
+          </select>
+        </div>
+
+        <!-- Кнопка создания кастомного блока -->
+        <button id="btn-open-custom-block" class="btn btn-secondary">
+          <span class="btn-icon">➕</span> Кастомный блок
+        </button>
+
+        <!-- Кнопка очистки холста -->
+        <button id="btn-clear-canvas" class="btn btn-danger-outline" title="Очистить холст">
+          🗑 Сброс
+        </button>
+
+        <!-- Экспорт проекта -->
+        <button id="btn-export-bundle" class="btn btn-primary">
+          <span class="btn-icon">💾</span> Собрать скрипты
+        </button>
+      </div>
+    </header>
+
+    <!-- Основное рабочее пространство -->
+    <main id="workspace">
+      <!-- Левый сайдбар: палитра доступных блоков -->
+      <aside id="palette-sidebar">
+        <div class="sidebar-header">
+          <h3>Палитра компонентов</h3>
+          <span class="sidebar-subtitle">Кликните для добавления</span>
+        </div>
+
+        <div class="palette-categories" id="palette-list">
+          <!-- Заполняется динамически из js/blocks-registry.js -->
+        </div>
+      </aside>
+
+      <!-- Центральная область: визуальный холст пайплайна -->
+      <section id="canvas-area">
+        <div class="canvas-toolbar">
+          <div class="canvas-status">
+            <span class="status-dot"></span>
+            <span id="pipeline-status-text">Конфигурация активна • Блоков: 0</span>
+          </div>
+          <div class="canvas-controls">
+            <button id="btn-zoom-in" class="ctrl-btn" title="Приблизить">+</button>
+            <button id="btn-zoom-out" class="ctrl-btn" title="Отдалить">−</button>
+            <button id="btn-zoom-reset" class="ctrl-btn" title="Сбросить масштаб">100%</button>
+          </div>
+        </div>
+
+        <div id="canvas-scroll-container">
+          <div id="pipeline-canvas">
+            <!-- Карточки добавленных блоков монтируются сюда -->
+            <div id="canvas-empty-state" class="empty-state">
+              <div class="empty-icon">🧩</div>
+              <h4>Холст пуст</h4>
+              <p>Выберите блок из левой палитры или загрузите готовый пресет сверху</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Правый сайдбар: Инспектор параметров и окно предпросмотра кода -->
+      <aside id="inspector-sidebar">
+        <div class="inspector-tabs">
+          <button class="tab-btn active" data-tab="properties">Свойства блока</button>
+          <button class="tab-btn" data-tab="code-preview">Генерация кода</button>
+        </div>
+
+        <!-- Вкладка 1: Параметры выбранного блока -->
+        <div id="tab-properties" class="inspector-tab-content active">
+          <div id="block-properties-form">
+            <div class="properties-placeholder">
+              <p>Выберите блок на холсте для настройки параметров</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Вкладка 2: Предпросмотр сгенерированного кода -->
+        <div id="tab-code-preview" class="inspector-tab-content">
+          <div class="code-view-controls">
+            <select id="code-target-select" class="select-styled">
+              <option value="autounattend">autounattend.xml (Windows Setup)</option>
+              <option value="format_script">format_fat32.ps1 (Форматирование)</option>
+              <option value="setup_complete">SetupComplete.cmd (Пост-установка)</option>
+              <option value="fat_sorter">sort_tracks.py (FAT Directory Sorter)</option>
+              <option value="diskpart_script">diskpart_config.txt</option>
+            </select>
+            <button id="btn-copy-code" class="btn btn-small" title="Копировать код в буфер">📋 Копия</button>
+          </div>
+          <pre id="code-output" class="code-block"><code><!-- Код генерируется в реальном времени --></code></pre>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Модальное окно создания кастомного блока -->
+    <div id="custom-block-modal" class="modal-overlay hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Создать кастомный блок</h3>
+          <button class="modal-close-btn" id="btn-close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="cb-name">Название блока</label>
+            <input type="text" id="cb-name" class="input-styled" placeholder="Например: Мой твик реестра / Драйвер">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="cb-category">Категория</label>
+              <select id="cb-category" class="select-styled">
+                <option value="tweaks">Твики и реестр</option>
+                <option value="drivers">Драйверы и софт</option>
+                <option value="audio">Аудио и медиа</option>
+                <option value="scripts">Пользовательские скрипты</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="cb-icon">Иконка (эмодзи)</label>
+              <input type="text" id="cb-icon" class="input-styled" value="⚙️" maxlength="4">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="cb-desc">Краткое описание</label>
+            <input type="text" id="cb-desc" class="input-styled" placeholder="Что делает этот блок...">
+          </div>
+          <div class="form-group">
+            <label for="cb-target">Куда добавлять результат</label>
+            <select id="cb-target" class="select-styled">
+              <option value="setup_complete">В SetupComplete.cmd (CMD / BAT)</option>
+              <option value="powershell">В PowerShell-скрипт сборщика (PS1)</option>
+              <option value="autounattend">В autounattend.xml (Синхронная команда Windows)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="cb-code">Шаблон выполняемого скрипта</label>
+            <textarea id="cb-code" class="textarea-styled" rows="6" placeholder="Вставьте команды PowerShell или CMD..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-cancel-custom-block" class="btn btn-secondary">Отмена</button>
+          <button id="btn-save-custom-block" class="btn btn-primary">Сохранить блок</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Подключение скриптов приложения -->
+  <script src="js/fonts.js"></script>
+  <script src="js/blocks-registry.js"></script>
+  <script src="js/custom-blocks.js"></script>
+  <script src="js/generator.js"></script>
+  <script src="js/canvas.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
